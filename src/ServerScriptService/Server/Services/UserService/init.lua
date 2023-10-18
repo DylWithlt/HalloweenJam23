@@ -30,6 +30,11 @@ local function PlayerAdded(player)
 end
 
 function UserService:InitializeProfileTemplate()
+	local userData = script:FindFirstChild("UserData")
+	if not userData then
+		return
+	end
+
 	for _, module in script.UserData:GetChildren() do
 		local controller = require(module)
 
