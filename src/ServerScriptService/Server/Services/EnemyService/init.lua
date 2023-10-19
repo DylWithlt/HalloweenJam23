@@ -26,22 +26,23 @@ function EnemyService:SpawnEnemy(enemyName)
 
 	local player = game.Players:GetChildren()[1]
 
-	local spawnpoint = waypoints[random:NextInteger(1, #waypoints)]
-	if player and player.Character then
-		while (spawnpoint - player.Character.Origin.Position).Magnitude < MinSpawnDistanceFromPlayer do
-			spawnpoint = waypoints[random:NextInteger(1, #waypoints)]
-		end
-	end
+	-- local spawnpoint = waypoints[random:NextInteger(1, #waypoints)]
+	-- if player and player.Character then
+	-- 	while (spawnpoint - player.Character.Origin.Position).Magnitude < MinSpawnDistanceFromPlayer do
+	-- 		spawnpoint = waypoints[random:NextInteger(1, #waypoints)]
+	-- 	end
+	-- end
+	local spawnpoint = workspace.Level1:FindFirstChild("EnemySpawn")
 
-	self:SpawnEnemyAt(enemyName, waypoints, spawnpoint)
+	self:SpawnEnemyAt(enemyModule, spawnpoint.CFrame.Position)
 end
 
-function EnemyService:SpawnEnemyAt(enemyName, spawnpoint)
-	return enemyModule.new(waypoints, spawnpoint)
+function EnemyService:SpawnEnemyAt(enemyModule, spawnpoint)
+	return require(enemyModule).new(spawnpoint)
 end
 
 function EnemyService:GameStart()
-	self:SpawnEnemy("Enemy1", 0)
+	self:SpawnEnemy("Monster", 0)
 end
 
 return EnemyService
