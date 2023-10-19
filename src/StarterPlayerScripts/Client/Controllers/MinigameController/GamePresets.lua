@@ -17,22 +17,27 @@ local module = {
 			["A metaphor for capitalism"] = {
 				Dialog = "Join them and worsen my burden.",
 				Image = "rbxassetid://15083636236",
-				ExpectedResult = 3,
+				Voice = "rbxassetid://15107888975",
+				CanRun = true,
 			},
 			["Henry"] = {
 				Dialog = "Give me, Give me, Give me!",
 				Image = "rbxassetid://15090363952",
-				ExpectedResult = 3,
+				Voice = "rbxassetid://15107877474",
+				CanRun = true,
 			},
 			["Face Man"] = {
 				Dialog = "Step out. See us. See it.",
-				Image = "rbxassetid://15083636236",
-				ExpectedResult = 3,
+				Image = "rbxassetid://15106640865",
+				Voice = "rbxassetid://15107877530",
+				CanRun = true,
 			},
 			["Love"] = {
 				Dialog = "Oh sweet creature. How long have you suffered?",
-				Image = "rbxassetid://15083636236",
-				ExpectedResult = 1,
+				Image = "rbxassetid://15106642645",
+				Voice = "rbxassetid://15107870663",
+				CanRun = true,
+				Higher = true,
 			},
 		},
 
@@ -52,8 +57,14 @@ local module = {
 			{
 				Entity = "Love",
 				Setting = "Cave",
-				ExpectedResult = 1,
 			},
+		},
+
+		AcceptanceResult = {
+			3,
+			3,
+			3,
+			1,
 		},
 
 		Acceptance = {

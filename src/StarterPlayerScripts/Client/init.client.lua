@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Globals = require(ReplicatedStorage.Shared.Globals)
 local Promise = require(Globals.Packages.Promise)
+--local minigames = require(Globals.Controllers.MinigameController)
 
 local function InitModules()
 	local inits = {}

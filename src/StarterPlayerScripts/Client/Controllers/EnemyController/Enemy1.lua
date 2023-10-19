@@ -6,7 +6,7 @@ local Janitor = require(Globals.Packages.Janitor)
 local BehaviorTreeCreator = require(Globals.Vendor.BehaviorTreeCreator)
 local SimplePath = require(Globals.Vendor.SimplePath)
 
-local EnemyFolder = Globals.Assets.Enemies.Enemy1
+-- local EnemyFolder = Globals.Assets.Enemies.Enemy1
 
 local Enemy = {}
 

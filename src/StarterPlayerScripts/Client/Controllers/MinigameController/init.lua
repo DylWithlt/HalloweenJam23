@@ -1,16 +1,19 @@
-local module = {}
+local module = { endingResult = {} }
 
 --// Services
-local REPLICATED_STORAGE = game:GetService("ReplicatedStorage")
-local PLAYERS = game:GetService("Players")
+local SoundService = game:GetService("SoundService")
 local ts = game:GetService("TweenService")
-local RUN_SERVICE = game:GetService("RunService")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+
+local Globals = require(ReplicatedStorage.Shared.Globals)
 
 --// Instances
-local assets = REPLICATED_STORAGE.Assets
-local shared = REPLICATED_STORAGE.Shared
+local assets = Globals.Assets
+local shared = Globals.Shared
 local sounds = assets.Sounds
-local guiTemplate = assets.MinigameGui
+local guiTemplate = assets:FindFirstChild("MinigameGui")
 local loadedGui
 
 --// Modules
@@ -19,63 +22,125 @@ local timer = require(shared.Timer)
 local acts = require(shared.Acts)
 
 --// Values
+local rng = Random.new()
+
+--// Functions
 module.actions = {
 	Spare = function(ui, autoSpare)
-		print("Spare")
+		if not autoSpare and not module.showSpareQTE(ui) then
+			return 0
+		end
+
+		module.PlaySound(sounds.SpareEffect, script)
+
+		local ti = TweenInfo.new(0.9, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+		local ti_0 = TweenInfo.new(0.15, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+		local ti_1 = TweenInfo.new(0.375, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out)
+
+		local entityFrame = ui.Frame.EntityFrame
+		local effect = entityFrame.SpareEffect
+
+		effect.Visible = true
+		effect.Size = UDim2.fromOffset(20, 20)
+		effect.Rotation = 25
+
+		effect.Position = UDim2.new(0.5, -40, 0.5, 6)
+
+		task.wait(0.15)
+
+		module.tween(
+			effect,
+			ti,
+			{ Position = UDim2.new(0.5, -2, 0.5, -12), Size = UDim2.fromOffset(100, 100), Rotation = 0 },
+			true
+		)
+		task.wait(0.1)
+		module.tween(effect, ti_0, { Position = UDim2.new(0.5, 6, 0.5, -6), Size = UDim2.fromOffset(64, 64) }, true)
+
+		effect.Position = UDim2.new(0.5, 0, 0.5, -6)
+		module.tween(effect, ti_1, { Position = UDim2.new(0.5, 6, 0.5, -6) }, true)
+
+		task.wait(0.35)
 
 		module.endEncounter(ui)
+		effect.Visible = false
+
+		return 1
 	end,
 
 	Kill = function(ui)
-		print("Kill")
-
 		local ti = TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.In)
 		local ti_1 = TweenInfo.new(0.375, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out)
 
 		local entityFrame = ui.Frame.EntityFrame
-		local killEffect = entityFrame.KillEffect
+		local effect = entityFrame.KillEffect
 
-		killEffect.Visible = true
-		killEffect.Size = UDim2.fromOffset(100, 100)
+		effect.Visible = true
+		effect.Size = UDim2.fromOffset(100, 100)
 
-		killEffect.Position = UDim2.new(0.5, 30, 0.5, -30)
+		effect.Position = UDim2.new(0.5, 30, 0.5, -30)
 
 		module.tween(
-			killEffect,
+			effect,
 			ti,
 			{ Position = UDim2.new(0.5, 6, 0.5, -6), Size = UDim2.fromOffset(64, 64) },
 			true,
 			function()
-				killEffect.Position = UDim2.new(0.5, 0, 0.5, -6)
-				module.tween(killEffect, ti_1, { Position = UDim2.new(0.5, 6, 0.5, -6) }, true)
+				module.PlaySound(sounds.Kill, script)
+				effect.Position = UDim2.new(0.5, 0, 0.5, -6)
+				module.tween(effect, ti_1, { Position = UDim2.new(0.5, 6, 0.5, -6) }, true)
 
 				task.wait(0.35)
 
 				module.endEncounter(ui)
+				effect.Visible = false
 			end
 		)
+
+		return 2
 	end,
 
 	Run = function(ui)
-		print("Run")
-
 		module.endEncounter(ui)
+
+		return 3
 	end,
 }
 
-function module.endEncounter(ui)
-	local dialogFrame = ui.Frame.DialogFrame
-	local buttonFrame = ui.Frame.ButtonFrame
-	local entityFrame = ui.Frame.EntityFrame
+local function compareTables(table1, table2)
+	print(table1, table2)
 
-	ui.Text.Dialog.DialogLabel.Text = ""
-
-	for _ = 0, 4 do
-		task.wait(0.05)
-		entityFrame.Visible = not entityFrame.Visible
-		buttonFrame.Visible = not buttonFrame.Visible
-		dialogFrame.Visible = not dialogFrame.Visible
+	for i, v in table1 do
+		if table2[i] ~= v then
+			return false
+		end
 	end
+
+	return true
+end
+
+function module.PlaySound(S, Parent, range, StopTime)
+	local SC = S:Clone()
+	SC.Name = "SoundPlaying"
+	SC.Parent = Parent
+	if range then
+		SC.PlaybackSpeed += rng:NextNumber(-range, range)
+	end
+
+	SC:Play()
+
+	if StopTime then
+		task.delay(StopTime, function()
+			SC:Destroy()
+		end)
+	else
+		local onEnd
+		onEnd = SC.Ended:Connect(function()
+			onEnd:Disconnect()
+			SC:Destroy()
+		end)
+	end
+	return SC
 end
 
 local function tween(instance, tweenInfo, propertyTable)
@@ -124,6 +189,84 @@ function module.tween(instance, tweenInfo, propertyTable, yield, endingFunction,
 	return createdTween
 end
 
+function module.endGame(ui, endDialog)
+	local frame = ui.Frame
+	local bti = TweenInfo.new(0.15, Enum.EasingStyle.Linear)
+	frame.Bars.Visible = true
+
+	module.tween(frame.Bars, bti, { Size = UDim2.fromScale(1, 0) })
+
+	task.wait(1)
+	module.displayComputerDialog(ui, endDialog)
+end
+
+function module.endEncounter(ui)
+	local dialogFrame = ui.Frame.DialogFrame
+	local buttonFrame = ui.Frame.ButtonFrame
+	local entityFrame = ui.Frame.EntityFrame
+
+	ui.Text.Dialog.DialogLabel.Text = ""
+
+	module.PlaySound(sounds.Next, script)
+
+	for _ = 0, 6 do
+		task.wait(0.02)
+		entityFrame.Visible = not entityFrame.Visible
+		buttonFrame.Visible = not buttonFrame.Visible
+		dialogFrame.Visible = not dialogFrame.Visible
+	end
+end
+
+function module.showSpareQTE(ui)
+	local qte = ui.Frame.SpareQTE
+	local hitBar = qte.HitBar
+	local bar = qte.Bar
+
+	local ti = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut, math.huge, true)
+	local result
+	local onInput
+
+	qte.Visible = true
+	hitBar.Position = UDim2.fromScale(0, 0.5)
+
+	local moveTween = module.tween(hitBar, ti, { Position = UDim2.fromScale(1, 0.5) })
+
+	onInput = UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+		if input.KeyCode ~= Enum.KeyCode.E or gameProcessedEvent then
+			return
+		end
+
+		local x = hitBar.AbsolutePosition.X
+		local min = 64 - bar.Size.X.Offset / 2
+		local max = 64 + bar.Size.X.Offset / 2
+
+		if x > min and x < max then
+			result = true
+		else
+			result = false
+		end
+
+		onInput:Disconnect()
+	end)
+
+	repeat
+		task.wait()
+	until result ~= nil
+
+	moveTween:Destroy()
+	qte.Visible = false
+
+	if result then
+		module.PlaySound(sounds.Spare, script)
+		task.wait(0.2)
+	else
+		module.PlaySound(sounds.Death, script)
+		task.wait(1.25)
+	end
+
+	return result
+end
+
 local function loadGui(player)
 	if loadedGui then
 		loadedGui:Destroy()
@@ -139,13 +282,6 @@ local function loadGui(player)
 	return loadedGui
 end
 
--- local function alignAsset(asset)
--- 	local p = asset.Position
--- 	local s = asset.Size
--- 	asset.Position = UDim2.new(p.X.Scale, math.round(p.X.Offset / 10) * 10, p.Y.Scale, math.round(p.Y.Offset / 10) * 10)
--- 	asset.Size = UDim2.new(s.X.Scale, math.round(s.X.Offset / 10) * 10, s.Y.Scale, math.round(s.Y.Offset / 10) * 10)
--- end
-
 function module.displayComputerDialog(ui, dialog)
 	local computerDialog = ui.Text.ComputerDialog
 	computerDialog.Text = ""
@@ -154,6 +290,7 @@ function module.displayComputerDialog(ui, dialog)
 		for i = 1, string.len(text) do
 			task.wait(0.05)
 			computerDialog.Text = string.sub(text, 1, i)
+			module.PlaySound(sounds.PC, script)
 		end
 
 		task.wait(dialog.WaitTime)
@@ -168,6 +305,8 @@ function module.displayEntity(ui, entity)
 
 	entityFrame.Visible = false
 	entityFrame.Image = entity.Image
+
+	module.PlaySound(sounds.Appear, script)
 
 	for _ = 0, 4 do
 		task.wait(0.025)
@@ -196,9 +335,11 @@ function module.displayDialog(ui, entity)
 	module.tween(dialogFrame, ti, { Position = UDim2.fromOffset(0, 0) }, true)
 	task.wait(0.75)
 
+	sounds.Voice.SoundId = entity["Voice"] or ""
 	for i = 1, string.len(entity.Dialog) do
 		task.wait(0.025)
 		textFrame.Text = string.sub(entity.Dialog, 1, i)
+		module.PlaySound(sounds.Voice, script)
 	end
 
 	task.wait(0.75)
@@ -223,6 +364,12 @@ function module.enableChoices(ui, autoSpare)
 	buttons.Visible = false
 	buttonsVisual.Visible = false
 
+	if autoSpare then
+		buttonsVisual.Spare.Image = "rbxassetid://15106755313"
+	else
+		buttonsVisual.Spare.Image = "rbxassetid://15089599254"
+	end
+
 	for _ = 0, 6 do
 		task.wait(0.025)
 		buttonsVisual.Visible = not buttonsVisual.Visible
@@ -231,13 +378,27 @@ function module.enableChoices(ui, autoSpare)
 	buttons.Visible = true
 
 	local connections = {}
+	local result
 
 	for _, button in ipairs(buttons:GetChildren()) do
 		connections[#connections + 1] = button.MouseButton1Click:Connect(function()
+			for _, connection in ipairs(connections) do
+				connection:Disconnect()
+			end
+
+			module.PlaySound(sounds.Select, script)
+
 			local action = module.actions[button.Name]
-			action(ui, autoSpare)
+			result = action(ui, autoSpare)
+			print(result)
 		end)
 	end
+
+	repeat
+		task.wait()
+	until result ~= nil
+
+	return result
 end
 
 function module.loadGame(player, model)
@@ -251,7 +412,7 @@ function module.loadGame(player, model)
 	local frame = ui.Frame
 	frame.Bars.Size = UDim2.fromScale(1, 0)
 
-	module.runGame(ui, preset, model)
+	table.insert(module.endingResult, module.runGame(ui, preset, model))
 end
 
 function module.runGame(ui, preset, model)
@@ -271,13 +432,16 @@ function module.runGame(ui, preset, model)
 	ui.Text.Enabled = true
 	ui.Buttons.Enabled = true
 
+	ui.Frame.Bars.Visible = true
 	ui.Buttons.Frame.Visible = false
 
 	module.tween(entityFrame, breathTi, { Position = UDim2.new(0.5, 0, 0.5, 3) }, false)
 
-	--module.displayComputerDialog(ui, preset.Intro)
+	module.displayComputerDialog(ui, preset.Intro)
 
 	module.tween(frame.Bars, bti, { Size = UDim2.fromScale(1, 1) })
+
+	local results = {}
 
 	for _, section in ipairs(preset.Progression) do
 		local entity = preset.Entities[section.Entity]
@@ -289,11 +453,58 @@ function module.runGame(ui, preset, model)
 		task.wait(1)
 		module.displayChoices(ui)
 		module.displayDialog(ui, entity)
-		module.enableChoices(ui)
 
-		task.wait(1000000)
+		local choiceResult = module.enableChoices(ui, entity["Higher"])
+		table.insert(results, choiceResult)
+
+		task.wait(0.1)
+
+		if choiceResult == 0 then
+			break
+		end
+	end
+
+	local endDialog
+	local endingResult = 5
+
+	if table.find(results, 0) then -- Weakness
+		endDialog = preset.Weakness
+		endingResult = 5
+	elseif compareTables(results, preset.AcceptanceResult) then -- Acceptance
+		endDialog = preset.Acceptance
+		endingResult = 1
+	elseif compareTables(results, table.create(#results, 2)) then -- hate
+		endDialog = preset.Hate
+		endingResult = 3
+	elseif compareTables(results, table.create(#results, 1)) then -- Love
+		endDialog = preset.Love
+		endingResult = 4
+	else -- Denial
+		endDialog = preset.Denial
+		endingResult = 2
+	end
+
+	module.endGame(ui, endDialog)
+	return endingResult
+end
+
+--// Main //--
+return module
+
+function module.ApplyMonitorPrompts()
+	for _, computer in ipairs(workspace.Computers:GetChildren()) do
+		local newPrompt = Instance.new("ProximityPrompt")
+		newPrompt.Parent = computer.PrimaryPart
+
+		newPrompt.Triggered:Connect(function(playerWhoTriggered)
+			acts:createTempAct("MinigameRunning", module.loadGame, nil, playerWhoTriggered, computer)
+			newPrompt.Enabled = false
+		end)
 	end
 end
 
 --// Main //--
+
+task.delay(1, module.ApplyMonitorPrompts)
+
 return module
