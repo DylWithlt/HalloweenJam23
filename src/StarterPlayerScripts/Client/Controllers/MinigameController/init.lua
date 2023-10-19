@@ -394,6 +394,7 @@ function module.enableChoices(ui, autoSpare)
 		end)
 	end
 
+	print("Bog")
 	repeat
 		task.wait()
 	until result ~= nil
