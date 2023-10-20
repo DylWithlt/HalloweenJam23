@@ -36,6 +36,7 @@ local function SetupEntity(entity, janitor)
 	LeftLegControl.EndEffector = entity:FindFirstChild("LeftLegTip", true)
 	LeftLegControl.Target = LeftTarget
 	LeftLegControl.Pole = LeftTarget.Pole
+	LeftLegControl.SmoothTime = 0
 
 	local RightHip = entity:FindFirstChild("RightHipSocket", true)
 	local RightTarget = janitor:Add(LeftTarget:Clone())
@@ -48,6 +49,7 @@ local function SetupEntity(entity, janitor)
 	RightLegControl.EndEffector = entity:FindFirstChild("RightLegTip", true)
 	RightLegControl.Target = RightTarget
 	RightLegControl.Pole = RightTarget.Pole
+	RightLegControl.SmoothTime = 0
 
 	local ikInstances = {
 		Left = {
