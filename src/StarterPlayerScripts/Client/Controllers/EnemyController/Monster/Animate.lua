@@ -20,13 +20,12 @@ end
 
 local function playStepSound(entity)
 	local soundToPlay = util.getRandomChild(sounds.Steps)
-	util.PlaySound(soundToPlay, entity.PrimaryPart, 0.15)
+	util.PlaySound(soundToPlay, entity.HumanoidRootPart, 0.15)
 end
-playStepSound()
 
 local function SetupEntity(entity, janitor)
-	local rootPart = entity:FindFirstChild("HumanoidRootPart")
-	local humanoid = entity:FindFirstChild("Humanoid")
+	local rootPart = entity.HumanoidRootPart
+	local humanoid = entity.Humanoid
 	local upperWalkingTrack = humanoid:LoadAnimation(upperWalking)
 	upperWalkingTrack:AdjustSpeed(0)
 

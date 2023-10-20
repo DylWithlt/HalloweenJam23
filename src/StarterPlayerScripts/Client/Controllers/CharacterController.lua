@@ -6,9 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Globals = require(ReplicatedStorage.Shared.Globals)
 local Net = require(Globals.Packages.Net)
 
-local WALK_SPEED = 8
-local SPRINT_SPEED = 15
-local _speedDiff = SPRINT_SPEED - WALK_SPEED
+local _speedDiff = Globals.Config.Character.SprintSpeed - Globals.Config.Character.WalkSpeed
 local TIME_TO_SPRINT = 0.45
 local TIME_TO_UNSPRINT = 0.25
 
@@ -17,6 +15,12 @@ local LocalPlayer = Players.LocalPlayer
 local CharacterController = {}
 CharacterController.PlayStepSound = Net:RemoteEvent("PlayStepSound")
 CharacterController.TimeSinceLastStepSound = time()
+
+local diedConn
+
+function CharacterController:GameInit()
+	self.CameraController = require(Globals.Client.Controllers.CameraController)
+end
 
 function CharacterController:GameStart()
 	if LocalPlayer.Character then
@@ -34,7 +38,13 @@ end
 
 function CharacterController:CharacterAdded(character)
 	local humanoid = character:WaitForChild("Humanoid")
-	humanoid.WalkSpeed = WALK_SPEED
+	humanoid.WalkSpeed = Globals.Config.Character.WalkSpeed
+	self.CameraController:Enable()
+
+	diedConn = humanoid.Died:Connect(function()
+		diedConn:Disconnect()
+		self.CameraController:Disable()
+	end)
 
 	RunService:BindToRenderStep("Handle Sprint", Enum.RenderPriority.Character.Value, function(dt)
 		local isMoving = humanoid.MoveDirection.Magnitude > 0.01
@@ -45,10 +55,10 @@ function CharacterController:CharacterAdded(character)
 		end
 
 		if not isMoving then
-			humanoid.WalkSpeed = WALK_SPEED
-		elseif isSprinting and humanoid.WalkSpeed < SPRINT_SPEED then
+			humanoid.WalkSpeed = Globals.Config.Character.WalkSpeed
+		elseif isSprinting and humanoid.WalkSpeed < Globals.Config.Character.SprintSpeed then
 			humanoid.WalkSpeed += _speedDiff * dt / TIME_TO_SPRINT
-		elseif not isSprinting and humanoid.WalkSpeed > WALK_SPEED then
+		elseif not isSprinting and humanoid.WalkSpeed > Globals.Config.Character.WalkSpeed then
 			humanoid.WalkSpeed -= _speedDiff * dt / TIME_TO_UNSPRINT
 		end
 	end)

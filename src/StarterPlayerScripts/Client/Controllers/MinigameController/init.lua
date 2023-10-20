@@ -5,6 +5,7 @@ local SoundService = game:GetService("SoundService")
 local ts = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 
 local Globals = require(ReplicatedStorage.Shared.Globals)
@@ -15,6 +16,8 @@ local shared = Globals.Shared
 local sounds = assets.Sounds
 local guiTemplate = assets:FindFirstChild("MinigameGui")
 local loadedGui
+
+local player = Players.LocalPlayer
 
 local camera = workspace.CurrentCamera
 
@@ -143,6 +146,7 @@ function module.endGame(ui, endDialog, model)
 	sounds.Button:Play()
 	util.tween(camera, ti, { CFrame = logCamera }, true)
 	camera.CameraType = Enum.CameraType.Custom
+	module.CameraController:Enable()
 end
 
 function module.endEncounter(ui)
@@ -358,6 +362,10 @@ function module.loadGame(player, model)
 	frame.Bars.Size = UDim2.fromScale(1, 0)
 
 	table.insert(module.endingResult, module.runGame(ui, preset, model))
+
+	local hud = player.PlayerGui:FindFirstChild("Hud")
+
+	hud.ComputersFound.Text = #module.endingResult .. "/" .. 3
 end
 
 function module.runGame(ui, preset, model)
@@ -443,11 +451,16 @@ local function setCamera(computer)
 
 	local ti = TweenInfo.new(1, Enum.EasingStyle.Quart)
 
+	module.CameraController:Disable()
 	camera.CameraType = Enum.CameraType.Scriptable
 	util.tween(camera, ti, { CFrame = goal })
 end
 
 function module.ApplyMonitorPrompts()
+	repeat
+		task.wait()
+	until #workspace.Computers:GetChildren() >= 3
+
 	for i, computer in ipairs(workspace.Computers:GetChildren()) do
 		print(i)
 		local newPrompt = Instance.new("ProximityPrompt")
@@ -465,7 +478,32 @@ function module.ApplyMonitorPrompts()
 end
 
 --// Main //--
+function module:GameInit()
+	module.CameraController = require(Globals.Client.Controllers.CameraController)
+	task.spawn(module.ApplyMonitorPrompts)
+end
 
-task.delay(1, module.ApplyMonitorPrompts)
+player.CharacterAdded:Connect(function(character)
+	if loadedGui then
+		loadedGui:Destroy()
+	end
+
+	for _, computer in ipairs(workspace.Computers:GetChildren()) do
+		computer.Display.Transparency = 0
+		computer.Display.SurfaceLight.Enabled = false
+		computer.Screen.Transparency = 0
+
+		local p = computer.PrimaryPart:FindFirstChild("ProximityPrompt")
+		if not p then
+			continue
+		end
+		p.Enabled = true
+	end
+
+	module.endingResult = {}
+
+	local hud = player.PlayerGui:FindFirstChild("Hud")
+	hud.ComputersFound.Text = #module.endingResult .. "/" .. 3
+end)
 
 return module
