@@ -9,6 +9,8 @@ local Janitor = require(Globals.Packages.Janitor)
 local Net = require(Globals.Packages.Net)
 local acts = require(Globals.Shared.Acts)
 
+local sounds = Globals.Assets.Sounds
+
 local LocalPlayer = Players.LocalPlayer
 
 local FlashLightController = {}
@@ -51,6 +53,7 @@ local function Flash(_, actionType)
 	})
 
 	flashJanitor:Add(tween, "Cancel")
+	sounds.CameraFlash:Play()
 
 	tween:Play()
 	tween.Completed:Wait()

@@ -22,6 +22,7 @@ local camera = workspace.CurrentCamera
 local presets = require(script.GamePresets)
 local timer = require(shared.Timer)
 local acts = require(shared.Acts)
+local util = require(shared.Util)
 
 --// Values
 local rng = Random.new()
@@ -34,7 +35,7 @@ module.actions = {
 			return 0
 		end
 
-		module.PlaySound(sounds.SpareEffect, script)
+		util.PlaySound(sounds.SpareEffect, script)
 
 		local ti = TweenInfo.new(0.9, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 		local ti_0 = TweenInfo.new(0.15, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
@@ -51,17 +52,17 @@ module.actions = {
 
 		task.wait(0.15)
 
-		module.tween(
+		util.tween(
 			effect,
 			ti,
 			{ Position = UDim2.new(0.5, -2, 0.5, -12), Size = UDim2.fromOffset(100, 100), Rotation = 0 },
 			true
 		)
 		task.wait(0.1)
-		module.tween(effect, ti_0, { Position = UDim2.new(0.5, 6, 0.5, -6), Size = UDim2.fromOffset(64, 64) }, true)
+		util.tween(effect, ti_0, { Position = UDim2.new(0.5, 6, 0.5, -6), Size = UDim2.fromOffset(64, 64) }, true)
 
 		effect.Position = UDim2.new(0.5, 0, 0.5, -6)
-		module.tween(effect, ti_1, { Position = UDim2.new(0.5, 6, 0.5, -6) }, true)
+		util.tween(effect, ti_1, { Position = UDim2.new(0.5, 6, 0.5, -6) }, true)
 
 		task.wait(0.35)
 
@@ -83,15 +84,15 @@ module.actions = {
 
 		effect.Position = UDim2.new(0.5, 30, 0.5, -30)
 
-		module.tween(
+		util.tween(
 			effect,
 			ti,
 			{ Position = UDim2.new(0.5, 6, 0.5, -6), Size = UDim2.fromOffset(64, 64) },
 			true,
 			function()
-				module.PlaySound(sounds.Kill, script)
+				util.PlaySound(sounds.Kill, script)
 				effect.Position = UDim2.new(0.5, 0, 0.5, -6)
-				module.tween(effect, ti_1, { Position = UDim2.new(0.5, 6, 0.5, -6) }, true)
+				util.tween(effect, ti_1, { Position = UDim2.new(0.5, 6, 0.5, -6) }, true)
 
 				task.wait(0.35)
 
@@ -120,76 +121,6 @@ local function compareTables(table1, table2)
 	return true
 end
 
-function module.PlaySound(S, Parent, range, StopTime)
-	local SC = S:Clone()
-	SC.Name = "SoundPlaying"
-	SC.Parent = Parent
-	if range then
-		SC.PlaybackSpeed += rng:NextNumber(-range, range)
-	end
-
-	SC:Play()
-
-	if StopTime then
-		task.delay(StopTime, function()
-			SC:Destroy()
-		end)
-	else
-		local onEnd
-		onEnd = SC.Ended:Connect(function()
-			onEnd:Disconnect()
-			SC:Destroy()
-		end)
-	end
-	return SC
-end
-
-local function tween(instance, tweenInfo, propertyTable)
-	local newTween = ts:Create(instance, tweenInfo, propertyTable)
-	newTween:Play()
-	newTween.Completed:Connect(function()
-		task.wait()
-		newTween:Destroy()
-	end)
-
-	return newTween
-end
-
-function module.tween(instance, tweenInfo, propertyTable, yield, endingFunction, endingState)
-	local createdTween
-
-	if typeof(instance) == "table" then
-		for _, v in pairs(instance) do
-			createdTween = tween(v, tweenInfo, propertyTable)
-		end
-	else
-		createdTween = tween(instance, tweenInfo, propertyTable)
-	end
-
-	if yield then
-		createdTween.Completed:Wait()
-		if not endingFunction then
-			return createdTween
-		end
-
-		local state = createdTween.PlaybackState
-		if state ~= (endingState or Enum.PlaybackState.Completed) then
-			return
-		end
-		endingFunction()
-	elseif endingFunction then
-		createdTween.Completed:Connect(function(state)
-			if state ~= (endingState or Enum.PlaybackState.Completed) then
-				return
-			end
-
-			endingFunction()
-		end)
-	end
-
-	return createdTween
-end
-
 function module.endGame(ui, endDialog, model)
 	sounds.ComputerAmbience:Stop()
 
@@ -199,7 +130,7 @@ function module.endGame(ui, endDialog, model)
 
 	frame.Bars.Visible = true
 
-	module.tween(frame.Bars, bti, { Size = UDim2.fromScale(1, 0) })
+	util.tween(frame.Bars, bti, { Size = UDim2.fromScale(1, 0) })
 
 	task.wait(1)
 	module.displayComputerDialog(ui, endDialog)
@@ -210,7 +141,7 @@ function module.endGame(ui, endDialog, model)
 	model.Screen.Transparency = 0
 
 	sounds.Button:Play()
-	module.tween(camera, ti, { CFrame = logCamera }, true)
+	util.tween(camera, ti, { CFrame = logCamera }, true)
 	camera.CameraType = Enum.CameraType.Custom
 end
 
@@ -221,7 +152,7 @@ function module.endEncounter(ui)
 
 	ui.Text.Dialog.DialogLabel.Text = ""
 
-	module.PlaySound(sounds.Next, script)
+	util.PlaySound(sounds.Next, script)
 
 	for _ = 0, 6 do
 		task.wait(0.02)
@@ -243,7 +174,7 @@ function module.showSpareQTE(ui)
 	qte.Visible = true
 	hitBar.Position = UDim2.fromScale(0, 0.5)
 
-	local moveTween = module.tween(hitBar, ti, { Position = UDim2.fromScale(1, 0.5) })
+	local moveTween = util.tween(hitBar, ti, { Position = UDim2.fromScale(1, 0.5) })
 
 	onInput = UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
 		if input.KeyCode ~= Enum.KeyCode.E or gameProcessedEvent then
@@ -271,10 +202,10 @@ function module.showSpareQTE(ui)
 	qte.Visible = false
 
 	if result then
-		module.PlaySound(sounds.Spare, script)
+		util.PlaySound(sounds.Spare, script)
 		task.wait(0.2)
 	else
-		module.PlaySound(sounds.Death, script)
+		util.PlaySound(sounds.Death, script)
 		task.wait(1.25)
 	end
 
@@ -304,7 +235,7 @@ function module.displayComputerDialog(ui, dialog)
 		for i = 1, string.len(text) do
 			task.wait(0.05)
 			computerDialog.Text = string.sub(text, 1, i)
-			module.PlaySound(sounds.PC, script)
+			util.PlaySound(sounds.PC, script)
 		end
 
 		task.wait(dialog.WaitTime)
@@ -320,7 +251,7 @@ function module.displayEntity(ui, entity)
 	entityFrame.Visible = false
 	entityFrame.Image = entity.Image
 
-	module.PlaySound(sounds.Appear, script)
+	util.PlaySound(sounds.Appear, script)
 
 	for _ = 0, 4 do
 		task.wait(0.025)
@@ -332,9 +263,9 @@ function module.loadBackground(ui, background)
 	local ti = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
 	local backgroundImage = ui.Frame.Background
 
-	module.tween(backgroundImage, ti, { ImageTransparency = 1 }, true, function()
+	util.tween(backgroundImage, ti, { ImageTransparency = 1 }, true, function()
 		backgroundImage.Image = background
-		module.tween(backgroundImage, ti, { ImageTransparency = 0 }, true)
+		util.tween(backgroundImage, ti, { ImageTransparency = 0 }, true)
 	end)
 end
 
@@ -346,14 +277,14 @@ function module.displayDialog(ui, entity)
 	dialogFrame.Position = UDim2.fromOffset(0, 19)
 	dialogFrame.Visible = true
 
-	module.tween(dialogFrame, ti, { Position = UDim2.fromOffset(0, 0) }, true)
+	util.tween(dialogFrame, ti, { Position = UDim2.fromOffset(0, 0) }, true)
 	task.wait(0.75)
 
 	sounds.Voice.SoundId = entity["Voice"] or ""
 	for i = 1, string.len(entity.Dialog) do
 		task.wait(0.025)
 		textFrame.Text = string.sub(entity.Dialog, 1, i)
-		module.PlaySound(sounds.Voice, script)
+		util.PlaySound(sounds.Voice, script)
 	end
 
 	task.wait(0.75)
@@ -367,7 +298,7 @@ function module.displayChoices(ui)
 	buttonFrame.Visible = true
 	buttonFrame.Buttons.Visible = false
 
-	module.tween(buttonFrame, ti, { Position = UDim2.fromOffset(0, 0) }, true)
+	util.tween(buttonFrame, ti, { Position = UDim2.fromOffset(0, 0) }, true)
 	task.wait(0.5)
 end
 
@@ -400,7 +331,7 @@ function module.enableChoices(ui, autoSpare)
 				connection:Disconnect()
 			end
 
-			module.PlaySound(sounds.Select, script)
+			util.PlaySound(sounds.Select, script)
 
 			local action = module.actions[button.Name]
 			result = action(ui, autoSpare)
@@ -452,12 +383,12 @@ function module.runGame(ui, preset, model)
 	ui.Frame.Bars.Visible = true
 	ui.Buttons.Frame.Visible = false
 
-	module.tween(entityFrame, breathTi, { Position = UDim2.new(0.5, 0, 0.5, 3) }, false)
-	module.tween(frame.Fade, fadeTi, { BackgroundTransparency = 1 }, true)
+	util.tween(entityFrame, breathTi, { Position = UDim2.new(0.5, 0, 0.5, 3) }, false)
+	util.tween(frame.Fade, fadeTi, { BackgroundTransparency = 1 }, true)
 
 	module.displayComputerDialog(ui, preset.Intro)
 
-	module.tween(frame.Bars, bti, { Size = UDim2.fromScale(1, 1) })
+	util.tween(frame.Bars, bti, { Size = UDim2.fromScale(1, 1) })
 
 	local results = {}
 
@@ -513,7 +444,7 @@ local function setCamera(computer)
 	local ti = TweenInfo.new(1, Enum.EasingStyle.Quart)
 
 	camera.CameraType = Enum.CameraType.Scriptable
-	module.tween(camera, ti, { CFrame = goal })
+	util.tween(camera, ti, { CFrame = goal })
 end
 
 function module.ApplyMonitorPrompts()

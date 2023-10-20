@@ -2,6 +2,10 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Globals = require(ReplicatedStorage.Shared.Globals)
+local util = require(Globals.Shared.Util)
+
+local assets = Globals.Assets
+local sounds = assets.Sounds
 
 local animations = Globals.Assets.Enemies.Monster.Animations
 local upperWalking = animations.UpperWalking
@@ -13,6 +17,12 @@ floorCastParams.RespectCanCollide = true
 local function lerp(a, b, t)
 	return (1 - t) * a + b * t
 end
+
+local function playStepSound(entity)
+	local soundToPlay = util.getRandomChild(sounds.Steps)
+	util.PlaySound(soundToPlay, entity.PrimaryPart, 0.15)
+end
+playStepSound()
 
 local function SetupEntity(entity, janitor)
 	local rootPart = entity:FindFirstChild("HumanoidRootPart")
