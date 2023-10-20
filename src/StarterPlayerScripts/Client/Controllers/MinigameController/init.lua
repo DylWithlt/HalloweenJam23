@@ -16,6 +16,8 @@ local sounds = assets.Sounds
 local guiTemplate = assets:FindFirstChild("MinigameGui")
 local loadedGui
 
+local camera = workspace.CurrentCamera
+
 --// Modules
 local presets = require(script.GamePresets)
 local timer = require(shared.Timer)
@@ -23,6 +25,7 @@ local acts = require(shared.Acts)
 
 --// Values
 local rng = Random.new()
+local logCamera
 
 --// Functions
 module.actions = {
@@ -108,8 +111,6 @@ module.actions = {
 }
 
 local function compareTables(table1, table2)
-	print(table1, table2)
-
 	for i, v in table1 do
 		if table2[i] ~= v then
 			return false
@@ -189,15 +190,28 @@ function module.tween(instance, tweenInfo, propertyTable, yield, endingFunction,
 	return createdTween
 end
 
-function module.endGame(ui, endDialog)
+function module.endGame(ui, endDialog, model)
+	sounds.ComputerAmbience:Stop()
+
 	local frame = ui.Frame
 	local bti = TweenInfo.new(0.15, Enum.EasingStyle.Linear)
+	local ti = TweenInfo.new(1, Enum.EasingStyle.Quart)
+
 	frame.Bars.Visible = true
 
 	module.tween(frame.Bars, bti, { Size = UDim2.fromScale(1, 0) })
 
 	task.wait(1)
 	module.displayComputerDialog(ui, endDialog)
+
+	model.Display.Transparency = 1
+	model.Display.Attachment.PointLight.Enabled = false
+	model.Display.SurfaceLight.Enabled = false
+	model.Screen.Transparency = 0
+
+	sounds.Button:Play()
+	module.tween(camera, ti, { CFrame = logCamera }, true)
+	camera.CameraType = Enum.CameraType.Custom
 end
 
 function module.endEncounter(ui)
@@ -417,6 +431,8 @@ end
 
 function module.runGame(ui, preset, model)
 	sounds.ComputerAmbience:Play()
+	sounds.Button:Play()
+	sounds.ScreenOn:Play()
 
 	model.Screen.Transparency = 1
 	model.Display.Transparency = 1
@@ -425,6 +441,7 @@ function module.runGame(ui, preset, model)
 	local entityFrame = frame.EntityFrame
 
 	local bti = TweenInfo.new(0.15, Enum.EasingStyle.Linear)
+	local fadeTi = TweenInfo.new(1.5, Enum.EasingStyle.Linear)
 
 	local breathTi = TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut, math.huge, true)
 
@@ -436,6 +453,7 @@ function module.runGame(ui, preset, model)
 	ui.Buttons.Frame.Visible = false
 
 	module.tween(entityFrame, breathTi, { Position = UDim2.new(0.5, 0, 0.5, 3) }, false)
+	module.tween(frame.Fade, fadeTi, { BackgroundTransparency = 1 }, true)
 
 	module.displayComputerDialog(ui, preset.Intro)
 
@@ -484,21 +502,33 @@ function module.runGame(ui, preset, model)
 		endingResult = 2
 	end
 
-	module.endGame(ui, endDialog)
+	module.endGame(ui, endDialog, model)
 	return endingResult
 end
 
---// Main //--
-return module
+local function setCamera(computer)
+	logCamera = camera.CFrame
+	local goal = computer:GetPivot() * CFrame.new(0, 0, 1.4)
+
+	local ti = TweenInfo.new(1, Enum.EasingStyle.Quart)
+
+	camera.CameraType = Enum.CameraType.Scriptable
+	module.tween(camera, ti, { CFrame = goal })
+end
 
 function module.ApplyMonitorPrompts()
-	for _, computer in ipairs(workspace.Computers:GetChildren()) do
+	for i, computer in ipairs(workspace.Computers:GetChildren()) do
+		print(i)
 		local newPrompt = Instance.new("ProximityPrompt")
 		newPrompt.Parent = computer.PrimaryPart
 
 		newPrompt.Triggered:Connect(function(playerWhoTriggered)
-			acts:createTempAct("MinigameRunning", module.loadGame, nil, playerWhoTriggered, computer)
+			task.spawn(function()
+				acts:createTempAct("MinigameRunning", module.loadGame, nil, playerWhoTriggered, computer)
+			end)
+
 			newPrompt.Enabled = false
+			setCamera(computer)
 		end)
 	end
 end
