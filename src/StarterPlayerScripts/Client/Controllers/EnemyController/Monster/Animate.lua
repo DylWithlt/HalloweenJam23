@@ -1,4 +1,10 @@
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Globals = require(ReplicatedStorage.Shared.Globals)
+
+local animations = Globals.Assets.Enemies.Monster.Animations
+local upperWalking = animations.UpperWalking
 
 local floorCastParams = RaycastParams.new()
 floorCastParams.CollisionGroup = "FloorRaycast"
@@ -11,6 +17,8 @@ end
 local function SetupEntity(entity, janitor)
 	local rootPart = entity:FindFirstChild("HumanoidRootPart")
 	local humanoid = entity:FindFirstChild("Humanoid")
+	local upperWalkingTrack = humanoid:LoadAnimation(upperWalking)
+	upperWalkingTrack:AdjustSpeed(0)
 
 	local LeftHip = entity:FindFirstChild("LeftHipSocket", true)
 	local LeftTarget = janitor:Add(Instance.new("Part", entity))
@@ -61,7 +69,7 @@ local function SetupEntity(entity, janitor)
 		[RightTarget] = rootPart.R,
 	}
 
-	return rootPart, humanoid, rootPart.Waist, ikInstances, goals
+	return rootPart, humanoid, upperWalkingTrack, rootPart.Waist, ikInstances, goals
 end
 
 local function ShouldMoveTarget(target, goals, goalOffset, maxDistance)
@@ -92,10 +100,12 @@ local function SetMovingTarget(movingTargetData, target, rootPart)
 	movingTargetData.distance = 0
 end
 
-local function MoveTarget(movingTargetData, goals, goalOffset, ikInstances, rootPart, maxDistance)
+local function MoveTarget(movingTargetData, goals, goalOffset, ikInstances, rootPart, maxDistance, upperWalkingTrack)
 	local movingTarget = movingTargetData.target
 	movingTargetData.distance += (movingTargetData.lastPosition - rootPart.Position).Magnitude
 	local t = math.min(movingTargetData.distance / maxDistance, 1)
+	local tAnim = (t / 2 + if movingTargetData.target == ikInstances.Right.Target then 0 else 0.5)
+	upperWalkingTrack.TimePosition = tAnim * upperWalkingTrack.Length
 
 	local movingGoal = goals[movingTarget]
 	local desired = movingTargetData.origin:Lerp(movingGoal.WorldPosition + goalOffset, t)
@@ -129,8 +139,8 @@ local function UpdateTargetOrientations(ikInstances, rightVector)
 	end
 end
 
-function UpdateWaistHeight(leftTarget, rightTarget, rootPart, waistMotor6D, waistC0)
-	local LY, RY = leftTarget.Position.Y, rightTarget.Position.Y
+function UpdateWaistHeight(ikInstances, rootPart, waistMotor6D, waistC0)
+	local LY, RY = ikInstances.Left.Target.Position.Y, ikInstances.Right.Target.Position.Y
 	local minHeight = math.min(LY, RY)
 	local maxHeight = if minHeight == LY then RY else LY
 	local waistPosition = (rootPart.Position.Y - lerp(minHeight, maxHeight, 0.25) - 4) * Vector3.yAxis
@@ -139,7 +149,7 @@ function UpdateWaistHeight(leftTarget, rightTarget, rootPart, waistMotor6D, wais
 end
 
 return function(entity, janitor)
-	local rootPart, humanoid, waistMotor6D, ikInstances, goals = SetupEntity(entity, janitor)
+	local rootPart, humanoid, upperWalkingTrack, waistMotor6D, ikInstances, goals = SetupEntity(entity, janitor)
 	local waistC0 = waistMotor6D.C0
 
 	local movingTargetData = {
@@ -148,6 +158,8 @@ return function(entity, janitor)
 		lastPosition = rootPart.Position,
 		distance = 0,
 	}
+
+	upperWalkingTrack:Play()
 
 	janitor:Add(RunService.PreSimulation:Connect(function()
 		local rootVelocity = rootPart.AssemblyLinearVelocity * Vector3.new(1, 0, 1)
@@ -164,10 +176,10 @@ return function(entity, janitor)
 		end
 
 		if movingTargetData.target then
-			MoveTarget(movingTargetData, goals, goalOffset, ikInstances, rootPart, maxDistance)
+			MoveTarget(movingTargetData, goals, goalOffset, ikInstances, rootPart, maxDistance, upperWalkingTrack)
 		end
 
-		UpdateWaistHeight(ikInstances.Left.Target, ikInstances.Right.Target, rootPart, waistMotor6D, waistC0)
+		UpdateWaistHeight(ikInstances, rootPart, waistMotor6D, waistC0)
 		UpdateTargetOrientations(ikInstances, rootPart.CFrame.RightVector)
 	end))
 
