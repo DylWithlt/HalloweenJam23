@@ -67,7 +67,7 @@ function Monster.new(spawnPosition)
 
 	local Path = SimplePath.new(Entity.HumanoidModel, {
 		AgentRadius = 3,
-		AgentHeight = 6,
+		AgentHeight = 4,
 		AgentCanJump = false,
 		AgentCanClimb = false,
 		WaypointSpacing = 4,
@@ -78,6 +78,7 @@ function Monster.new(spawnPosition)
 
 	local self = {
 		Model = Entity.HumanoidModel,
+		InstantAggroDistance = 5,
 		CloseDistance = 15,
 		FarDistance = 40,
 
@@ -93,7 +94,9 @@ function Monster.new(spawnPosition)
 		Aggroed = false,
 		Target = nil,
 		SoundAggro = 0,
+		AggroThresh = 5,
 		MaxSoundAggro = 10,
+		lastSoundTime = time(),
 	}
 
 	SetupPath(Path, self)
@@ -105,8 +108,13 @@ function Monster.new(spawnPosition)
 	jan:Add(
 		RunService.PostSimulation:Connect(function(dt)
 			Brain:run(self)
-			self.SoundAggro = math.clamp(self.SoundAggro - dt * 0.4, 0, self.MaxSoundAggro)
-			print(`SoundAggro: {self.SoundAggro}`)
+
+			local timeToReachMaxDecay = 1
+			local timeSinceLast = time() - self.lastSoundTime
+			local decayRate = if timeSinceLast > 1 then math.max(timeSinceLast / timeToReachMaxDecay, 1) * 2 else 0.2
+
+			self.SoundAggro = math.clamp(self.SoundAggro - (decayRate * dt), 0, self.MaxSoundAggro)
+			-- print(`SoundAggro: {self.SoundAggro} {decayRate}`)
 
 			if self.Target then
 				Path:Run(self.Target)
@@ -118,6 +126,7 @@ function Monster.new(spawnPosition)
 	jan:Add(
 		Monster.SoundService.SoundSignal:Connect(function(pos: Vector3, value: number)
 			self.lastSoundPosition = pos
+			self.lastSoundTime = time()
 			self.SoundAggro = math.clamp(self.SoundAggro + value, 0, self.MaxSoundAggro)
 		end),
 		"Disconnect"
@@ -127,58 +136,5 @@ function Monster.new(spawnPosition)
 
 	return self
 end
-
--- local function PickRandomWithWeight(array, weightFunction)
--- 	local selectable = {}
-
--- 	local totalWeight = 0
--- 	for _, v in ipairs(array) do
--- 		local weight = weightFunction(v)
-
--- 		table.insert(selectable, {
--- 			Value = v,
--- 			Weight = weight,
--- 		})
-
--- 		totalWeight += weight
--- 	end
-
--- 	local travelled = 0
--- 	local x = RNG:GetNextNumber(0, totalWeight)
--- 	for _, v in ipairs(selectable) do
--- 		if travelled < x then
--- 			travelled += v.Weight
--- 			continue
--- 		end
-
--- 		return v
--- 	end
--- end
-
--- function Monster.GetNextRoamPoint(self)
--- 	local overlapParams = OverlapParams.new()
--- 	overlapParams.CollisionGroup = "Waypoint"
--- 	overlapParams.FilterType = Enum.RaycastFilterType.Include
--- 	overlapParams.FilterDescendantsInstances = self.Waypoints
-
--- 	local nearbyPoints = workspace:GetPartBoundsInBox(
--- 		CFrame.new(self.Model.Origin.Position),
--- 		RoamSearchRange * Vector3.new(1, 1, 1),
--- 		overlapParams
--- 	)
-
--- 	local player = game.Players:GetChildren()[1]
--- 	if player and player.Character and #nearbyPoints > 0 then
--- 		local characterPosition = player.Character.Origin.Position
--- 		local entityToCharacter = (characterPosition - self.Model.Origin.Position).Unit
-
--- 		return PickRandomWithWeight(self.Waypoints, function(waypoint)
--- 			local product = (waypoint - characterPosition).Unit:Dot(entityToCharacter)
--- 			return math.max(0, (1 + product) / 2)
--- 		end)
--- 	else
--- 		return self.Waypoints[RNG:NextInteger(1, #self.Waypoints)]
--- 	end
--- end
 
 return Monster

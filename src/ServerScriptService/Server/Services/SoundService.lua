@@ -16,12 +16,12 @@ end
 function SoundService:GameStart()
 	Net:Connect("Flash", function(player)
 		print("Flash")
-		local pos = player.Character:GetPivot().Position
+		local pos = player.Character.PrimaryPart.Position
 		SoundService:MakeSound(pos, 2)
 	end)
 
 	Net:Connect("PlayStepSound", function(player)
-		local pos = player.Character:GetPivot().Position
+		local pos = player.Character.PrimaryPart.Position
 		SoundService:MakeSound(pos, 1)
 	end)
 	--Start Code

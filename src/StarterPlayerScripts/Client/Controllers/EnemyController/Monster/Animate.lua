@@ -2,6 +2,7 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Globals = require(ReplicatedStorage.Shared.Globals)
+local Signal = require(Globals.Packages.Signal)
 local util = require(Globals.Shared.Util)
 
 local assets = Globals.Assets
@@ -28,6 +29,7 @@ local function SetupEntity(entity, janitor)
 	local humanoid = entity.Humanoid
 	local upperWalkingTrack = humanoid:LoadAnimation(upperWalking)
 	upperWalkingTrack:AdjustSpeed(0)
+	local stepped = janitor:Add(Signal.new(), "Destroy")
 
 	local LeftHip = entity:FindFirstChild("LeftHipSocket", true)
 	local LeftTarget = janitor:Add(Instance.new("Part", entity))
@@ -80,7 +82,7 @@ local function SetupEntity(entity, janitor)
 		[RightTarget] = rootPart.R,
 	}
 
-	return rootPart, humanoid, upperWalkingTrack, rootPart.Waist, ikInstances, goals
+	return rootPart, humanoid, upperWalkingTrack, rootPart.Waist, ikInstances, goals, stepped
 end
 
 local function ShouldMoveTarget(target, goals, goalOffset, maxDistance)
@@ -111,7 +113,16 @@ local function SetMovingTarget(movingTargetData, target, rootPart)
 	movingTargetData.distance = 0
 end
 
-local function MoveTarget(movingTargetData, goals, goalOffset, ikInstances, rootPart, maxDistance, upperWalkingTrack)
+local function MoveTarget(
+	movingTargetData,
+	goals,
+	goalOffset,
+	ikInstances,
+	rootPart,
+	maxDistance,
+	upperWalkingTrack,
+	stepped
+)
 	local movingTarget = movingTargetData.target
 	movingTargetData.distance += (movingTargetData.lastPosition - rootPart.Position).Magnitude
 	local t = math.min(movingTargetData.distance / maxDistance, 1)
@@ -129,6 +140,7 @@ local function MoveTarget(movingTargetData, goals, goalOffset, ikInstances, root
 	movingTarget.CFrame = movingTarget.CFrame.Rotation + Vector3.new(desired.X, desired_y, desired.Z)
 
 	if t == 1 then
+		stepped:Fire()
 		local nextTarget = if ikInstances.Left.Target == movingTarget
 			then ikInstances.Right.Target
 			else ikInstances.Left.Target
@@ -160,7 +172,8 @@ function UpdateWaistHeight(ikInstances, rootPart, waistMotor6D, waistC0)
 end
 
 return function(entity, janitor)
-	local rootPart, humanoid, upperWalkingTrack, waistMotor6D, ikInstances, goals = SetupEntity(entity, janitor)
+	local rootPart, humanoid, upperWalkingTrack, waistMotor6D, ikInstances, goals, stepped =
+		SetupEntity(entity, janitor)
 	local waistC0 = waistMotor6D.C0
 
 	local movingTargetData = {
@@ -187,12 +200,21 @@ return function(entity, janitor)
 		end
 
 		if movingTargetData.target then
-			MoveTarget(movingTargetData, goals, goalOffset, ikInstances, rootPart, maxDistance, upperWalkingTrack)
+			MoveTarget(
+				movingTargetData,
+				goals,
+				goalOffset,
+				ikInstances,
+				rootPart,
+				maxDistance,
+				upperWalkingTrack,
+				stepped
+			)
 		end
 
 		UpdateWaistHeight(ikInstances, rootPart, waistMotor6D, waistC0)
 		UpdateTargetOrientations(ikInstances, rootPart.CFrame.RightVector)
 	end))
 
-	return janitor
+	return stepped
 end

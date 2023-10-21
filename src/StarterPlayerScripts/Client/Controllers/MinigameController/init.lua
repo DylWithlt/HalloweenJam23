@@ -125,6 +125,7 @@ local function compareTables(table1, table2)
 end
 
 function module.endGame(ui, endDialog, model)
+	game.SoundService.Monster.Volume = 0.5
 	sounds.ComputerAmbience:Stop()
 
 	local frame = ui.Frame
@@ -369,6 +370,8 @@ function module.loadGame(player, model)
 end
 
 function module.runGame(ui, preset, model)
+	game.SoundService.Monster.Volume = 0
+
 	sounds.ComputerAmbience:Play()
 	sounds.Button:Play()
 	sounds.ScreenOn:Play()

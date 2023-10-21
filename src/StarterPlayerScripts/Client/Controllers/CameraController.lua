@@ -11,7 +11,7 @@ local DefaultFOV, SprintFOV = 70, 85
 local WalkSpeed, SprintSpeed = Globals.Config.Character.WalkSpeed, Globals.Config.Character.SprintSpeed
 
 local function Map(v, min1, max1, min2, max2)
-	return (v - min1) / (max1 - min1) * (max2 - min2) + min2
+	return min2 + (v - min1) * (max2 - min2) / (max1 - min1)
 end
 
 local CameraController = {}
@@ -26,6 +26,7 @@ function CameraController:GameStart()
 end
 
 function CameraController:Enable()
+	print("enable")
 	if self.Enabled then
 		return
 	end
@@ -48,25 +49,24 @@ function CameraController:Enable()
 		local currentVelocity = if LocalPlayer.Character
 			then LocalPlayer.Character.HumanoidRootPart.AssemblyLinearVelocity
 			else Vector3.zero
-		currentVelocityTilt = currentVelocityTilt:Lerp(camera.CFrame:VectorToObjectSpace(currentVelocity / 7.5), 0.1)
+		currentVelocityTilt = currentVelocityTilt:Lerp(camera.CFrame:VectorToObjectSpace(currentVelocity), 0.1)
 		z += math.rad(math.clamp(-currentVelocityTilt.X, -math.rad(10), math.rad(10)))
 		camera.CFrame = origin * CFrame.new(x, y, 0) * CFrame.Angles(0, 0, z)
 
 		local desiredFOV =
 			math.max(Map(currentVelocity.Magnitude, WalkSpeed, SprintSpeed, DefaultFOV, SprintFOV), DefaultFOV)
-		print(desiredFOV, camera.FieldOfView, math.pow(2, -5 * dt))
-		camera.FieldOfView += (desiredFOV - camera.FieldOfView) * math.pow(2, -15 * dt)
+		camera.FieldOfView += (desiredFOV - camera.FieldOfView) * (1 - math.pow(2, -10 * dt))
 	end)
 end
 
 function CameraController:Disable()
+	print("disable")
 	if not self.Enabled then
 		return
 	end
 	self.Enabled = false
 	UserInputService.MouseIconEnabled = true
 	RunService:UnbindFromRenderStep("Update Camera")
-	workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
 end
 
 return CameraController
