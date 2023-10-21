@@ -7,6 +7,7 @@ local Globals = require(ReplicatedStorage.Shared.Globals)
 local Janitor = require(Globals.Packages.Janitor)
 local BehaviorTreeCreator = require(Globals.Vendor.BehaviorTreeCreator)
 local SimplePath = require(Globals.Vendor.SimplePath)
+local Net = require(Globals.Packages.Net)
 
 local EnemyTemplate = Globals.Assets.Enemies.Monster
 local RoamSearchRange = 25
@@ -66,7 +67,7 @@ function Monster.new(spawnPosition)
 	Entity.HumanoidModel.PrimaryPart:SetNetworkOwner(player)
 
 	local Path = SimplePath.new(Entity.HumanoidModel, {
-		AgentRadius = 3,
+		AgentRadius = 1,
 		AgentHeight = 4,
 		AgentCanJump = false,
 		AgentCanClimb = false,
@@ -78,11 +79,17 @@ function Monster.new(spawnPosition)
 
 	local self = {
 		Model = Entity.HumanoidModel,
+		Spawn = spawnPosition,
 		InstantAggroDistance = 5,
 		CloseDistance = 15,
 		FarDistance = 40,
 
-		ScanTime = 1,
+		RemoteActions = {
+			Scan = Net:RemoteEvent("Scan"),
+			Jumpscare = Net:RemoteEvent("Jumpscare"),
+		},
+
+		ScanTime = 1.5,
 		RoamSpeed = 6,
 		ChaseSpeed = 60,
 
@@ -95,9 +102,11 @@ function Monster.new(spawnPosition)
 		Target = nil,
 		SoundAggro = 0,
 		AggroThresh = 5,
-		MaxSoundAggro = 10,
+		MaxSoundAggro = 5,
 		lastSoundTime = time(),
 	}
+
+	Entity:SetAttribute("AggroThresh", self.AggroThresh)
 
 	SetupPath(Path, self)
 
@@ -115,6 +124,7 @@ function Monster.new(spawnPosition)
 			local decayRate = if timeSinceLast > 1 then math.max(timeSinceLast / timeToReachMaxDecay, 1) * 2 else 0.2
 
 			self.SoundAggro = math.clamp(self.SoundAggro - (decayRate * dt), 0, self.MaxSoundAggro)
+			Entity:SetAttribute("SoundAggro", self.SoundAggro)
 			-- print(`SoundAggro: {self.SoundAggro} {decayRate}`)
 
 			if self.Target then
@@ -129,6 +139,7 @@ function Monster.new(spawnPosition)
 			self.lastSoundPosition = pos
 			self.lastSoundTime = time()
 			self.SoundAggro = math.clamp(self.SoundAggro + value, 0, self.MaxSoundAggro)
+			Entity:SetAttribute("SoundAggro", self.SoundAggro)
 		end),
 		"Disconnect"
 	)

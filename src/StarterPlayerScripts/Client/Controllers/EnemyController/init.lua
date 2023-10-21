@@ -2,6 +2,7 @@ local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Globals = require(ReplicatedStorage.Shared.Globals)
+local Monster = require(script.Monster)
 
 local EnemyController = {}
 EnemyController.WrappedEnemies = {}
@@ -30,15 +31,8 @@ function EnemyController:WrapEnemy(humanoidModel)
 		return
 	end
 
-	local enemyType = humanoidModel:GetAttribute("EnemyType")
-	local enemyModule = script:FindFirstChild(enemyType)
-	if not enemyModule then
-		warn(`No such enemy {enemyType}`)
-		return
-	end
-
-	SetupEnemy(humanoidModel, Globals.Assets.Enemies[enemyType].EntityModel:Clone())
-	self.WrappedEnemies[humanoidModel] = require(enemyModule).new(humanoidModel)
+	SetupEnemy(humanoidModel, Globals.Assets.Enemies.Monster.EntityModel:Clone())
+	self.WrappedEnemies[humanoidModel] = Monster.new(humanoidModel)
 end
 
 function EnemyController:CleanupEnemy(humanoidModel)

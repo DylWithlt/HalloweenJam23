@@ -35,7 +35,7 @@ local function SetupEntity(entity, janitor)
 	local LeftTarget = janitor:Add(Instance.new("Part", entity))
 	LeftTarget.Anchored = true
 	LeftTarget.CanCollide = false
-	LeftTarget.Transparency = 0.5
+	LeftTarget.Transparency = 1
 	LeftTarget.Size = Vector3.new(0.2, 0.2, 0.2)
 	LeftTarget.Color = Color3.new(0, 0, 1)
 	LeftTarget.CFrame = rootPart.CFrame * CFrame.new(-0.6, 0, 0) + Vector3.new(0, -5.26, 0)
@@ -51,9 +51,9 @@ local function SetupEntity(entity, janitor)
 
 	local RightHip = entity:FindFirstChild("RightHipSocket", true)
 	local RightTarget = janitor:Add(LeftTarget:Clone())
-	RightTarget.Parent = entity
 	RightTarget.Color = Color3.new(0, 0, 1)
 	RightTarget.CFrame = rootPart.CFrame * CFrame.new(0.6, 0, 0) + Vector3.new(0, -5.26, 0)
+	RightTarget.Parent = entity
 	local RightPole = RightTarget.Pole
 	local RightLegControl = janitor:Add(Instance.new("IKControl", humanoid))
 	RightLegControl.ChainRoot = entity:FindFirstChild("R.Leg.1", true)
