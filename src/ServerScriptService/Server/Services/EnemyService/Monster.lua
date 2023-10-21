@@ -109,6 +109,7 @@ function Monster.new(spawnPosition)
 		RunService.PostSimulation:Connect(function(dt)
 			Brain:run(self)
 
+			self.Model:SetAttribute("Aggroed", self.Aggroed)
 			local timeToReachMaxDecay = 1
 			local timeSinceLast = time() - self.lastSoundTime
 			local decayRate = if timeSinceLast > 1 then math.max(timeSinceLast / timeToReachMaxDecay, 1) * 2 else 0.2

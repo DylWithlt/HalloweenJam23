@@ -4,6 +4,8 @@ local Debris = game:GetService("Debris")
 local Globals = require(ReplicatedStorage.Shared.Globals)
 local Janitor = require(Globals.Packages.Janitor)
 local Animate = require(script.Animate)
+local Flicker = require(script.Flicker)
+local Aggro = require(script.Aggro)
 
 local stepSoundsFolder = Globals.Assets.Enemies.Monster.Sounds.Steps
 
@@ -11,6 +13,8 @@ local Enemy = {}
 
 function Enemy.new(entityModel)
 	local janitor = Janitor.new()
+	Flicker(entityModel, janitor)
+	Aggro(entityModel, janitor)
 	local stepped = Animate(entityModel, janitor)
 
 	local stepSounds = {}
