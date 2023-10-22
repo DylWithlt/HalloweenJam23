@@ -24,7 +24,7 @@ local FlashTweenInfo = TweenInfo.new(1, Enum.EasingStyle.Quart)
 local FlashOffset = 0.1
 
 local function Flash(_, actionType)
-	if acts:checkAct("MinigameRunning") then
+	if acts:checkAct("MinigameRunning", "Jumpscare") then
 		return
 	end
 
@@ -36,7 +36,7 @@ local function Flash(_, actionType)
 	local flash = flashJanitor:Add(FlashTemplate:Clone())
 	flash.Parent = workspace.CurrentCamera
 
-	print("Flash")
+	-- print("Flash")
 	Net:RemoteEvent("Flash"):FireServer()
 	FlashLightController.Flashed:Fire()
 

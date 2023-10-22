@@ -29,7 +29,7 @@ end
 
 function UserController:GameInit()
 	Net:Connect("UserAdded", function(user)
-		print("User Added Event")
+		--print("User Added Event")
 		Users[user.player] = user
 
 		if self.playerLoaded then

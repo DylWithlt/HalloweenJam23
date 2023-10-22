@@ -1,7 +1,13 @@
 local CollectionService = game:GetService("CollectionService")
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Globals = require(ReplicatedStorage.Shared.Globals)
+local Net = require(Globals.Packages.Net)
+
 local EnemyService = {}
 EnemyService.Spawns = {}
+EnemyService.InsanityReached = Net:RemoteEvent("InsanityReached")
 
 local MinSpawnDistanceFromPlayer
 local random = Random.new()
@@ -43,6 +49,13 @@ end
 
 function EnemyService:GameStart()
 	self:SpawnEnemy("Monster", 0)
+
+	self.InsanityReached.OnServerEvent:Connect(function(player)
+		local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
+		if humanoid then
+			humanoid.Health = 0
+		end
+	end)
 end
 
 return EnemyService

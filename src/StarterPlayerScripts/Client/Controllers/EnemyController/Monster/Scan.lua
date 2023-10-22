@@ -13,7 +13,7 @@ return function(entityModel, janitor)
 	chargeup.Parent = root
 
 	local flash = janitor:Add(soundFolder.Flash:Clone())
-	flash.Parent = root
+	flash.Parent = script
 
 	janitor:Add(
 		Net:Connect("Scan", function(model)

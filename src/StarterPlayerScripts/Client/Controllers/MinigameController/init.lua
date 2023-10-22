@@ -26,10 +26,79 @@ local presets = require(script.GamePresets)
 local timer = require(shared.Timer)
 local acts = require(shared.Acts)
 local util = require(shared.Util)
+local net = require(Globals.Packages.Net)
+
+local updateProgress = net:RemoteEvent("UpdateProgress")
 
 --// Values
 local rng = Random.new()
 local logCamera
+
+print("1 = Yellow ", "2 = Red ", "3 = Blue ")
+
+local endingDialog = {
+	{ -- Acceptance
+		WaitTime = 2.25,
+		"Rejoice, he has found his peace.",
+		"His mind has been cleared, and life can once again touch his heart.",
+		"For he is no longer held at his throat by great sorrow.",
+		"You are free Porter.",
+		"It’s okay.",
+		"You did what you had to…",
+		"your destiny…",
+		"and hers as well.",
+		"Wake up.",
+	},
+
+	{ -- Denial
+		WaitTime = 2.25,
+		"So be it.",
+		"May he forever feel this pain.",
+		"May he never find peace.",
+		"He has made his choice.",
+		"Let it be understood,",
+		"the withering of his soul and rotting of his heart is your own doing.",
+		"May.",
+		"He.",
+		"Suffer.",
+		"Wake up.",
+	},
+
+	{ -- Weakness
+		WaitTime = 2.25,
+		"And so the light will fade,",
+		"and the sorrow seeps in.",
+		"His heart reeks of tar and weakness.",
+		"For but only a weak mind,",
+		"may fall to such sorrow.",
+		"Wake up.",
+	},
+
+	{ -- Hate
+		WaitTime = 2.25,
+		"Burn burn burn burn burn burn burn!",
+		"There is nothing but anger,",
+		"there is nothing but hate,",
+		"nothing but rage,",
+		"wrath, and unrelenting fury.",
+		"He has faith in his new strength.",
+		"But he is lost as his strength deceives him.",
+		"For hate is true weakness.",
+		"May he kill in the name of hate,",
+		"may he burn in the name of love.",
+		"Wake up.",
+	},
+
+	{ -- Love
+		WaitTime = 2.25,
+		"“Oh come on! Stop talking like that.",
+		"I’m not going anywhere, you know that.",
+		"You are, and will always be my everything.”",
+		" … ",
+		"“I love you george”",
+		"Wake up.",
+	},
+}
 
 --// Functions
 module.actions = {
@@ -109,7 +178,6 @@ module.actions = {
 
 	Run = function(ui)
 		module.endEncounter(ui)
-
 		return 3
 	end,
 }
@@ -144,10 +212,35 @@ function module.endGame(ui, endDialog, model)
 	model.Display.SurfaceLight.Enabled = false
 	model.Screen.Transparency = 0
 
+	model.GameDisplay.BillboardGui.Enabled = false
+
 	sounds.Button:Play()
 	util.tween(camera, ti, { CFrame = logCamera }, true)
 	camera.CameraType = Enum.CameraType.Custom
 	module.CameraController:Enable()
+end
+
+function module.ending(ui)
+	acts:createAct("GameEnding")
+	ui.Ending.Enabled = true
+
+	task.wait(2)
+
+	local endDialog
+
+	if table.find(module.endingResult, 5) then -- Weakness
+		endDialog = endingDialog[3]
+	elseif compareTables(module.endingResult, table.create(3, 1)) then -- Acceptance
+		endDialog = endingDialog[1]
+	elseif compareTables(module.endingResult, table.create(3, 3)) then -- hate
+		endDialog = endingDialog[4]
+	elseif compareTables(module.endingResult, table.create(3, 4)) then -- Love
+		endDialog = endingDialog[5]
+	else -- Denial
+		endDialog = endingDialog[2]
+	end
+
+	module.displayComputerDialog(ui.Ending, endDialog)
 end
 
 function module.endEncounter(ui)
@@ -340,7 +433,6 @@ function module.enableChoices(ui, autoSpare)
 
 			local action = module.actions[button.Name]
 			result = action(ui, autoSpare)
-			print(result)
 		end)
 	end
 
@@ -365,8 +457,16 @@ function module.loadGame(player, model)
 	table.insert(module.endingResult, module.runGame(ui, preset, model))
 
 	local hud = player.PlayerGui:FindFirstChild("Hud")
-
+	if not hud then
+		return
+	end
 	hud.ComputersFound.Text = #module.endingResult .. "/" .. 3
+
+	updateProgress:FireServer(#module.endingResult)
+
+	if #module.endingResult >= 3 then
+		module.ending(ui)
+	end
 end
 
 function module.runGame(ui, preset, model)
@@ -409,7 +509,6 @@ function module.runGame(ui, preset, model)
 
 		module.loadBackground(ui, setting)
 		module.displayEntity(ui, entity)
-
 		task.wait(1)
 		module.displayChoices(ui)
 		module.displayDialog(ui, entity)
@@ -445,6 +544,7 @@ function module.runGame(ui, preset, model)
 	end
 
 	module.endGame(ui, endDialog, model)
+
 	return endingResult
 end
 
@@ -465,13 +565,15 @@ function module.ApplyMonitorPrompts()
 	until #workspace.Computers:GetChildren() >= 3
 
 	for i, computer in ipairs(workspace.Computers:GetChildren()) do
-		print(i)
 		local newPrompt = Instance.new("ProximityPrompt")
 		newPrompt.Parent = computer.PrimaryPart
 
 		newPrompt.Triggered:Connect(function(playerWhoTriggered)
 			task.spawn(function()
+				local char = playerWhoTriggered.Character.PrimaryPart
+				char.Anchored = true
 				acts:createTempAct("MinigameRunning", module.loadGame, nil, playerWhoTriggered, computer)
+				char.Anchored = false
 			end)
 
 			newPrompt.Enabled = false
@@ -496,6 +598,8 @@ player.CharacterAdded:Connect(function(character)
 		computer.Display.SurfaceLight.Enabled = false
 		computer.Screen.Transparency = 0
 
+		computer.GameDisplay.BillboardGui.Enabled = true
+
 		local p = computer.PrimaryPart:FindFirstChild("ProximityPrompt")
 		if not p then
 			continue
@@ -506,7 +610,12 @@ player.CharacterAdded:Connect(function(character)
 	module.endingResult = {}
 
 	local hud = player.PlayerGui:FindFirstChild("Hud")
+	if not hud then
+		return
+	end
 	hud.ComputersFound.Text = #module.endingResult .. "/" .. 3
+
+	updateProgress:FireServer(#module.endingResult)
 end)
 
 return module

@@ -17,18 +17,18 @@ local Monster = {}
 local RNG = Random.new()
 
 function Monster:GameInit()
-	print("Game Init Monster")
+	--print("Game Init Monster")
 	Monster.SoundService = require(Globals.Services.SoundService)
 end
 
 local function SetupPath(Path, self)
 	Path.Reached:Connect(function()
-		warn("Path Reached")
+		--warn("Path Reached")
 		self.Target = nil
 	end)
 
 	Path.Blocked:Connect(function()
-		warn("Path Blocked")
+		--warn("Path Blocked")
 		if self.Target then
 			Path:Run(self.Target)
 		end
@@ -144,7 +144,7 @@ function Monster.new(spawnPosition)
 		"Disconnect"
 	)
 
-	print("Grog initialized")
+	--print("Grog initialized")
 
 	return self
 end

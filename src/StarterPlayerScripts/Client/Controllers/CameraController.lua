@@ -3,12 +3,16 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
+local deb = game:GetService("Debris")
 
 local Globals = require(ReplicatedStorage.Shared.Globals)
 local Janitor = require(Globals.Packages.Janitor)
 local Net = require(Globals.Packages.Net)
 local CameraShaker = require(Globals.Vendor.CameraShaker)
 local CameraShakeInstance = require(Globals.Vendor.CameraShaker.CameraShakeInstance)
+local Acts = require(Globals.Shared.Acts)
+
+local sounds = Globals.Assets.Sounds
 
 local LocalPlayer = Players.LocalPlayer
 local MaxStepShakeDistance = 50
@@ -38,7 +42,6 @@ local function createStepShake(stepPosition)
 end
 
 function CameraController:GameInit()
-	CameraController.JumpscareBox = workspace:WaitForChild("JumpscareBox")
 	CameraController.FlashbangUI = LocalPlayer.PlayerGui:WaitForChild("Flashbang")
 	self.Shake:Start()
 end
@@ -91,7 +94,24 @@ function CameraController:ShakeStep(stepPosition)
 	self.Shake:Shake(createStepShake(stepPosition))
 end
 
+local function playJumpscareSound()
+	local sound = sounds.JumpScare:Clone()
+	sound.Parent = script
+	sound.TimePosition = 0.4
+
+	deb:AddItem(sound)
+
+	sound.Volume = 4
+	sound:Play()
+	task.wait(0.35)
+	TweenService:Create(sound, TweenInfo.new(1), { Volume = 0 }):Play()
+end
+
 function CameraController:Jumpscare()
+	Acts:createAct("Jumpscare")
+	local jumpscareBox = workspace:WaitForChild("JumpscareBox")
+	local camera = workspace.CurrentCamera
+
 	self:Disable()
 	UserInputService.MouseIconEnabled = false
 
@@ -99,8 +119,8 @@ function CameraController:Jumpscare()
 	self.FlashbangUI.Frame.BackgroundTransparency = 0
 	self.FlashbangUI.Enabled = true
 
-	workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
-	workspace.CurrentCamera.CFrame = self.JumpscareBox.CameraOrigin.CFrame
+	camera.CameraType = Enum.CameraType.Scriptable
+	-- camera.CFrame = self.JumpscareBox.CameraOrigin.CFrame
 
 	local flashTween = JumpscareJanitor:Add(
 		TweenService:Create(self.FlashbangUI.Frame, TweenInfo.new(1, Enum.EasingStyle.Linear), {
@@ -109,27 +129,46 @@ function CameraController:Jumpscare()
 		"Cancel"
 	)
 
-	local cameraTween = JumpscareJanitor:Add(
-		TweenService:Create(
-			workspace.CurrentCamera,
-			TweenInfo.new(0.3, Enum.EasingStyle.Quad),
-			{ CFrame = self.JumpscareBox.CameraDestination.CFrame }
-		),
-		"Cancel"
-	)
+	local animationObject = jumpscareBox.Jumpscare
+	local animation = jumpscareBox.JumpscareModel.Humanoid.Animator:LoadAnimation(animationObject)
+
+	animation:Play(0, 1, 1)
+	animation:AdjustSpeed(0)
+
+	local step = RunService.RenderStepped:Connect(function(deltaTime)
+		camera.FieldOfView = 20
+		workspace.CurrentCamera.CFrame = jumpscareBox.JumpscareModel.CameraPart.CFrame
+	end)
+
+	-- local cameraTween = JumpscareJanitor:Add(
+	-- 	TweenService:Create(
+	-- 		camera,
+	-- 		TweenInfo.new(0.3, Enum.EasingStyle.Elastic),
+	-- 		{ CFrame = self.JumpscareBox.CameraDestination.CFrame }
+	-- 	),
+	-- 	"Cancel"
+	-- )
 
 	flashTween:Play()
-	JumpscareJanitor:Add(task.delay(0.75, function()
+	JumpscareJanitor:Add(task.delay(3, function()
 		self.FlashbangUI.Enabled = false
-		cameraTween:Play()
+		animation:AdjustSpeed(1)
+
+		task.delay(0.27, playJumpscareSound)
+		--cameraTween:Play()
 	end))
 
 	JumpscareJanitor:Add(
-		cameraTween.Completed:Connect(function()
+		animation.Stopped:Connect(function()
+			step:Disconnect()
+
 			flashTween:Cancel()
 			self.FlashbangUI.Frame.BackgroundColor3 = Color3.new()
 			self.FlashbangUI.Frame.BackgroundTransparency = 0
 			self.FlashbangUI.Enabled = true
+			camera.FieldOfView = 70
+
+			Acts:removeAct("Jumpscare")
 		end),
 		"Disconnect"
 	)
