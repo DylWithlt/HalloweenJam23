@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Globals = require(ReplicatedStorage.Shared.Globals)
 local Janitor = require(Globals.Packages.Janitor)
 local Net = require(Globals.Packages.Net)
+local Signal = require(Globals.Packages.Signal)
 local acts = require(Globals.Shared.Acts)
 
 local sounds = Globals.Assets.Sounds
@@ -14,16 +15,13 @@ local sounds = Globals.Assets.Sounds
 local LocalPlayer = Players.LocalPlayer
 
 local FlashLightController = {}
+FlashLightController.Flashed = Signal.new()
 
 local flashJanitor = Janitor.new()
 
 local FlashTemplate = ReplicatedStorage.Assets.FlashTemplate
 local FlashTweenInfo = TweenInfo.new(1, Enum.EasingStyle.Quart)
 local FlashOffset = 0.1
-
-function FlashLightController:GameInit()
-	--Prestart Code
-end
 
 local function Flash(_, actionType)
 	if acts:checkAct("MinigameRunning") then
@@ -40,6 +38,7 @@ local function Flash(_, actionType)
 
 	print("Flash")
 	Net:RemoteEvent("Flash"):FireServer()
+	FlashLightController.Flashed:Fire()
 
 	flashJanitor:Add(
 		RunService.RenderStepped:Connect(function()
