@@ -56,6 +56,22 @@ local function SetupPath(Path, self)
 	Path.Visualize = false
 end
 
+local function CheckIfStuck(self)
+	local pos = self.Model.PrimaryPart.Position
+	local v = (self.lastPos - pos)
+	if v:Dot(v) > 0 then
+		self.lastMoveTime = time()
+	end
+	self.lastPos = pos
+
+	if time() - self.lastMoveTime > 4 then
+		warn("Entity may be stuck... attempting respawn.")
+		self.Aggroed = false
+		self.Target = nil
+		self.Model:PivotTo(CFrame.Angles(0, RNG:NextNumber(0, 2 * math.pi), 0) + self.Spawn)
+	end
+end
+
 function Monster.new(spawnPosition)
 	local jan = Janitor.new()
 
@@ -66,8 +82,12 @@ function Monster.new(spawnPosition)
 	Entity.Parent = workspace
 	Entity.HumanoidModel.PrimaryPart:SetNetworkOwner(player)
 
+	if not RunService:IsStudio() then
+		Entity.HumanoidModel.HumanoidRootPart.SphereHandleAdornment.Visible = true
+	end
+
 	local Path = SimplePath.new(Entity.HumanoidModel, {
-		AgentRadius = 1,
+		AgentRadius = 2,
 		AgentHeight = 4,
 		AgentCanJump = false,
 		AgentCanClimb = false,
@@ -104,7 +124,10 @@ function Monster.new(spawnPosition)
 		AggroThresh = 5,
 		MaxSoundAggro = 5,
 		lastSoundTime = time(),
+		lastMoveTime = time(),
 	}
+
+	self.lastPos = self.Model.PrimaryPart.Position
 
 	Entity:SetAttribute("AggroThresh", self.AggroThresh)
 
@@ -130,6 +153,9 @@ function Monster.new(spawnPosition)
 			if self.Target then
 				Path:Run(self.Target)
 			end
+
+			-- last pos
+			CheckIfStuck(self)
 		end),
 		"Disconnect"
 	)
