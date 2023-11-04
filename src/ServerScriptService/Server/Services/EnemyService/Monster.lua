@@ -82,10 +82,6 @@ function Monster.new(spawnPosition)
 	Entity.Parent = workspace
 	Entity.HumanoidModel.PrimaryPart:SetNetworkOwner(player)
 
-	if not RunService:IsStudio() then
-		Entity.HumanoidModel.HumanoidRootPart.SphereHandleAdornment.Visible = true
-	end
-
 	local Path = SimplePath.new(Entity.HumanoidModel, {
 		AgentRadius = 2,
 		AgentHeight = 4,

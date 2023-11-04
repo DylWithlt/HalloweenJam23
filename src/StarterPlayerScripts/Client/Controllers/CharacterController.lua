@@ -20,6 +20,7 @@ local diedConn
 
 function CharacterController:GameInit()
 	self.CameraController = require(Globals.Client.Controllers.CameraController)
+	self.SprintToggled = false
 end
 
 function CharacterController:GameStart()
@@ -34,6 +35,12 @@ function CharacterController:GameStart()
 	LocalPlayer.CharacterRemoving:Connect(function(character)
 		CharacterController:CharacterRemoving(character)
 	end)
+
+	UserInputService.InputBegan:Connect(function(inputObject, gpe)
+		if inputObject.KeyCode == Enum.KeyCode.Thumbstick1 then
+			self.SprintToggled = not self.SprintToggled
+		end
+	end)
 end
 
 function CharacterController:CharacterAdded(character)
@@ -47,8 +54,13 @@ function CharacterController:CharacterAdded(character)
 	end)
 
 	RunService:BindToRenderStep("Handle Sprint", Enum.RenderPriority.Character.Value, function(dt)
+		local isSprinting = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) or self.SprintToggled
 		local isMoving = humanoid.MoveDirection.Magnitude > 0.01
-		local isSprinting = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and isMoving
+		if not isMoving then
+			isSprinting = false
+			self.SprintToggled = false
+		end
+
 		if isSprinting and time() - self.TimeSinceLastStepSound > 1 then
 			self.TimeSinceLastStepSound = time()
 			CharacterController.PlayStepSound:FireServer()

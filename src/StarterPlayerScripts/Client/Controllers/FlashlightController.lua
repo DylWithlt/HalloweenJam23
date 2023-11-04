@@ -83,7 +83,14 @@ function FlashLightController:GameStart()
 	-- 	CharacterAdded(LocalPlayer.Character)
 	-- end
 
-	ContextActionService:BindAction("Flash", debounce(Flash), false, Enum.UserInputType.MouseButton1)
+	ContextActionService:BindAction(
+		"Flash",
+		debounce(Flash),
+		false,
+		Enum.UserInputType.MouseButton1,
+		Enum.KeyCode.ButtonL2,
+		Enum.KeyCode.ButtonR2
+	)
 end
 
 return FlashLightController

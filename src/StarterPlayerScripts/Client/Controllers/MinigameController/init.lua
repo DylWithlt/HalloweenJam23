@@ -275,7 +275,7 @@ function module.showSpareQTE(ui)
 	local moveTween = util.tween(hitBar, ti, { Position = UDim2.fromScale(1, 0.5) })
 
 	onInput = UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
-		if input.KeyCode ~= Enum.KeyCode.E or gameProcessedEvent then
+		if input.KeyCode ~= Enum.KeyCode.E or Enum.KeyCode.ButtonX or gameProcessedEvent then
 			return
 		end
 
@@ -424,7 +424,7 @@ function module.enableChoices(ui, autoSpare)
 	local result
 
 	for _, button in ipairs(buttons:GetChildren()) do
-		connections[#connections + 1] = button.MouseButton1Click:Connect(function()
+		connections[#connections + 1] = button.Activated:Connect(function()
 			for _, connection in ipairs(connections) do
 				connection:Disconnect()
 			end

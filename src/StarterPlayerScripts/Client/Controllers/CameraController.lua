@@ -77,9 +77,8 @@ function CameraController:Enable()
 		local x = 0.35 * math.cos(distanceTravelled * bobSpeed)
 		local y = 0.1 * math.sin(distanceTravelled * 2 * bobSpeed)
 		local z = math.rad(0.5) * math.cos(distanceTravelled * -bobSpeed)
-		local currentVelocity = if LocalPlayer.Character
-			then LocalPlayer.Character.HumanoidRootPart.AssemblyLinearVelocity
-			else Vector3.zero
+		local rootPart = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+		local currentVelocity = if rootPart then rootPart.AssemblyLinearVelocity else Vector3.zero
 		currentVelocityTilt = currentVelocityTilt:Lerp(camera.CFrame:VectorToObjectSpace(currentVelocity), 0.1)
 		z += math.rad(math.clamp(-currentVelocityTilt.X, -math.rad(10), math.rad(10)))
 		camera.CFrame = origin * CFrame.new(x, y, 0) * CFrame.Angles(0, 0, z)
